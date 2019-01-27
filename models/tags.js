@@ -8,6 +8,14 @@ module.exports = function(sequelize, DataTypes) {
       primaryKey: true,
       autoIncrement: true
     },
+    cid: {
+      type: DataTypes.INTEGER(11),
+      allowNull: false,
+      references: {
+        model: 'category',
+        key: 'id'
+      }
+    },
     name: {
       type: DataTypes.STRING(32),
       allowNull: false,

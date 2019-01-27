@@ -8,37 +8,32 @@ module.exports = function(sequelize, DataTypes) {
       primaryKey: true,
       autoIncrement: true
     },
-    uid: {
-      type: DataTypes.INTEGER(11),
-      allowNull: false
-    },
     Date: {
-      type: DataTypes.STRING(16),
-      allowNull: false
-    },
-    description: {
-      type: DataTypes.STRING(100),
+      type: DataTypes.DATEONLY,
       allowNull: true
     },
-    Ref_no: {
+    Description: {
       type: DataTypes.STRING(500),
-      allowNull: false,
-      unique: true
+      allowNull: true
+    },
+    ref_no: {
+      type: DataTypes.STRING(64),
+      allowNull: true
     },
     Branch_Code: {
       type: DataTypes.INTEGER(11),
       allowNull: true
     },
     Debit: {
-      type: DataTypes.STRING(16),
+      type: DataTypes.FLOAT,
       allowNull: true
     },
     Credit: {
-      type: DataTypes.STRING(16),
+      type: DataTypes.FLOAT,
       allowNull: true
     },
     Balance: {
-      type: DataTypes.STRING(16),
+      type: DataTypes.FLOAT,
       allowNull: true
     }
   }, {

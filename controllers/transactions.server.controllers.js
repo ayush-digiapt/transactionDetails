@@ -1,37 +1,42 @@
-/*Beans Copyright info*/
-
 const lib = require('../lib');
 const db = require('../db/db').sequelize;
 var config = require('config');
-var fs=require('fs');
-var multer= require('multer');
+var fs = require('fs');
+var multer = require('multer');
 
 
 
 /*Helper Functions*/
-var Transaction=require("../service/transactions");
-
-/*
- ** Beans generated CRR*UD controller methods.
- */
+var Transaction = require("../service/transactions");
 
 
 exports.getTransaction = lib.asyncMiddleware(async(req, res, next) => {
     console.log("Inside loging API\n");
     try {
         /*Async await*/
-        var uid=req.params.id;
-      
-       var  data = await Transaction.getTransaction(uid);
-       
- 
-        if(data===null){
-            
-        return res.status(401).send({status:401, message:"data not found"});
-        }
-        else{
-           return res.status(200).send({status:200 , data:data});
-             
+        var uid = req.params.id;
+
+        var data = await Transaction.getTransaction(uid);
+
+        // console.log(JSON.stringify(data));
+
+        var cdata = JSON.stringify(data);
+        console.log(cdata);
+
+
+
+        if (data === null) {
+
+            return res.status(400).send({
+                status: 400,
+                message: "data not found"
+            });
+        } else {
+            return res.status(200).send({
+                status: 200,
+                data: data
+            });
+
         }
     } catch (err) {
         console.log("Error\t", err);
@@ -43,20 +48,25 @@ exports.search = lib.asyncMiddleware(async(req, res, next) => {
     console.log("Inside loging API\n");
     try {
         /*Async await*/
-        var id=req.body.id;
+        var id = req.body.id;
 
-        console.log("id is>>",id);
-      
-       var  data = await Transaction.search(id);
-       
- 
-        if(data===null){
-            
-        return res.status(401).send({status:401, message:"data not found"});
-        }
-        else{
-           return res.status(200).send({status:200 , data:data});
-             
+        console.log("id is>>", id);
+
+        var data = await Transaction.search(id);
+
+
+        if (data === null) {
+
+            return res.status(400).send({
+                status: 400,
+                message: "data not found"
+            });
+        } else {
+            return res.status(200).send({
+                status: 200,
+                data: data
+            });
+
         }
     } catch (err) {
         console.log("Error\t", err);
@@ -64,33 +74,149 @@ exports.search = lib.asyncMiddleware(async(req, res, next) => {
     }
 });
 
+
 exports.import = lib.asyncMiddleware(async(req, res, next) => {
+    try {
+        var filename = await uploadfile(req, res);
+        var filepath = __dirname + "/upload/Transaction/" + filename;
+        var transaction_data = await Transaction.readExcelFile(filepath);
+        console.log("transaction_data>>>",transaction_data);
+        // console.log("excel_data\t"+excel_data);
+        fs.unlink(filepath);
+         var trasactionsrefno= await Transaction.getReferences();
+         var dataforadd=await Transaction.finddata(transaction_data,trasactionsrefno);
+        //return res.send(transaction_data);
+        // var createTransaction= await Transaction.createTransactionData(dataforadd);
+        var createTransaction= await Transaction.createTransactionData(dataforadd);
+
+        if(createTransaction.length!=0){
+            return res.status(200).send({status:200,message:"data added"});
+        }
+        else{
+            return res.status(204).send({status:204,message:"data is already added"});
+        }
+
+        // return res.send(createTransaction);
+    } catch (err) {
+        console.log("Error\t", err);
+        return res.status(400).send("Server Error");
+    }
+});
+
+async function uploadfile(req, res) {
+    return new Promise((resolve, reject) => {
+        var filename;
+        var storage = multer.diskStorage({
+            destination: function(req, file, callback) {
+                callback(null, 'controllers/upload/Transaction');
+            },
+            filename: function(req, file, callback) {
+                console.log(file.originalname);
+                filename = Date.now() + "-" + file.originalname.replace(/ /g, "");
+                callback(null, filename);
+            }
+        });
+        var upload = multer({
+            storage: storage
+        }).any(); //Single File
+
+        upload(req, res, function(err) {
+            if (err) {
+                console.log(err);
+                reject(err);
+            } else {
+                resolve(filename);
+            }
+        });
+    })
+}
+
+
+
+
+
+exports.transactiondatawithcategory = lib.asyncMiddleware(async(req, res, next) => {
     console.log("Inside loging API\n");
     try {
         /*Async await*/
-        //var file=req.body.file;
-        // var file = req.body.file;
-        // console.log(file);
 
-        //var file=req.file;
-        //console.log(file);
+       // var categoryname = await Transaction.findcategory();
+       var transactiondata = await Transaction.getTransaction();
+       console.log(">>>>>>",transactiondata);
 
 
-      
-      
-      
-      var  data1 = await Transaction.import();
+        var tid = await Transaction.getTransactionids();
+        console.log("(*******)", tid);
 
-      var data = await Transaction.getArray(data1);
-       
- 
-        if(data===null){
-            
-        return res.status(401).send({status:401, message:"data not found"});
+       // var categoryname = await Transaction.findcategory();
+
+        // var ctid=JSON.stringify(tid);
+        //console.log("ctid>>",ctid);
+
+
+       // var tagid = await Transaction.findtagids();
+
+        var categoryarray= await Transaction.findcategoryarray(tid);
+
+       // var data = await Transaction.getdata(tid)
+       var data=await Transaction.gettrasactionandcategorydata(transactiondata,categoryarray);
+
+       // console.log(categoryarray);
+      //  return res.status(400).send(categoryarray);
+
+        if (data === null) {
+
+            return res.status(400).send({
+                status: 400,
+                message: "data not found"
+            });
+        } else {
+            return res.status(200).send({status:200,data:data});
+               
+           
+
         }
-        else{
-           return res.status(200).send({status:200 , data:data});
-             
+    } catch (err) {
+        console.log("Error\t", err);
+        return res.status(400).send("Server Error");
+    }
+});
+
+
+
+exports.chartdetails = lib.asyncMiddleware(async(req, res, next) => {
+    console.log("Inside loging API\n");
+    try {
+        /*Async await*/
+        //  tagdata
+        var tagdata = await Transaction.gettag();
+
+         var id = await Transaction.gettagids();
+         console.log("tagid is >>>>",id);
+
+        var tidarray = await Transaction.gettidarray(id);
+
+        //var data = await Transaction.gettransactionchart(id);
+
+
+
+
+        // var  data = await Transaction.noTag(tid);
+
+
+        if (tidarray === null) {
+
+            return res.status(400).send({
+                status: 400,
+                message: "data not found"
+            });
+        } else {
+            return res.status(200).send({
+                status: 200,
+                tagdata: tagdata,
+                data: tidarray
+            });
+
         }
     } catch (err) {
         console.log("Error\t", err);
@@ -103,30 +229,22 @@ exports.noTag = lib.asyncMiddleware(async(req, res, next) => {
     console.log("Inside loging API\n");
     try {
         /*Async await*/
-        
 
-      
-       var  tid = await Transaction.getTid();
-    //     var id=[],temp={},ids;
-    //    tid.map(function(u){
-    //        temp={
-    //     ids:u.dataValues
-    //        }
-    //     id.push(ids);
-    //    })
-    //    console.log(id);
-      
 
-       var  data = await Transaction.noTag(tid);
-       
- 
-        if(data===null){
-            
-        return res.status(401).send({status:401, message:"data not found"});
-        }
-        else{
-           return res.status(200).send({status:200 , data:data});
-             
+
+        var tid = await Transaction.getTid();
+        console.log("tid is>>>", tid);
+        var data = await Transaction.noTag(tid);
+        if (data === null) {
+            return res.status(400).send({
+                status: 400,
+                message: "data not found"
+            });
+        } else {
+            return res.status(200).send({
+                status: 200,
+                data: data
+            });
         }
     } catch (err) {
         console.log("Error\t", err);
@@ -138,33 +256,34 @@ exports.noTag = lib.asyncMiddleware(async(req, res, next) => {
 /*Create transactions record.*/
 
 exports.createTransaction = function(req, res) {
-    // Log entry.
-    console.log('Transaction Controller: entering createTransaction ');
+        // Log entry.
+        console.log('Transaction Controller: entering createTransaction ');
 
-    var v = new lib.Validator ("uid:number,amount:number,tyoe:string");
+        var v = new lib.Validator("uid:number,amount:number,tyoe:string");
 
-    if (!v.run(req.body)) {
-        return res.status(400).send({
-            error: v.errors
+        if (!v.run(req.body)) {
+            return res.status(400).send({
+                error: v.errors
+            });
+        }
+
+        Transaction.create({
+            id: req.body.id,
+            uid: req.body.uid,
+            description: req.body.description,
+            amount: req.body.amount,
+            tyoe: req.body.tyoe
+        }).then(function(result) {
+            console.log('created transactions', result);
+            res.jsonp(result);
+        }).catch(function(err) {
+            console.log('Could not create transactions record');
+            console.log('err: %j', err);
         });
+
+
     }
-
-    Transaction.create({
-        id : req.body.id,
-				uid : req.body.uid,
-				description : req.body.description,
-				amount : req.body.amount,
-				tyoe : req.body.tyoe
-    }).then(function(result) {
-        console.log('created transactions', result);
-        res.jsonp(result);
-    }).catch(function(err) {
-        console.log('Could not create transactions record');
-        console.log('err: %j', err);
-    });
-    
-
-} /*End of createTransaction*/
+    /*End of createTransaction*/
 
 
 /*Get a single transactions */
@@ -211,11 +330,11 @@ exports.updateTransaction = function(req, res) {
 
     var transactions_id = req.params.transactions_id;
     Transaction.update({
-        id : req.body.id,
-				uid : req.body.uid,
-				description : req.body.description,
-				amount : req.body.amount,
-				tyoe : req.body.tyoe
+        id: req.body.id,
+        uid: req.body.uid,
+        description: req.body.description,
+        amount: req.body.amount,
+        tyoe: req.body.tyoe
     }, {
         where: {
             /* transactions table primary key */

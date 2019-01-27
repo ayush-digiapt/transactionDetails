@@ -5,3 +5,5 @@ var randomToken = require('random-token');
 
 /*Importing the Sequelize models*/
 var Relationship = db.import("../models/relationships");
+
+
